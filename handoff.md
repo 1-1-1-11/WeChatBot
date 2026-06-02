@@ -120,13 +120,40 @@
 - `python -c "import pyweixin; from pyweixin import Messages, Navigator; print('pyweixin import ok')"` exits 0.
 - `python -m unittest discover -s tests -v` passes: 28 tests, 0 failures.
 - `python -m wechat_bot.app --env .env.example --smoke-test` exits 0 with `smoke ok: 微信值班助手运行时可构建`.
+- `git commit -m "feat: add pyweixin message adapter"` succeeded and created local commit `e45278c`.
+- `git push -u origin main` failed with `Recv failure: Connection was reset`.
 
 ### Known issues or blockers
 - Remote push remains blocked by GitHub connectivity.
 - Live test contact/small account is still needed to verify `pyweixin` reads actual new personal 微信 messages and sends a low-risk template.
+- Latest remote push attempt reached GitHub but reset the connection before upload completed.
 
 ### Next exact step
 - Commit Section 4, retry push, then run a controlled live test after a test contact sends a message.
 
 ### User decisions since previous handoff
 - Use domestic PC 微信 / Weixin behavior; `pywechat` remains only the upstream project name.
+
+## 2026-06-02 15:59 - Section 5: Project README
+
+### Completed work and changed files
+- Replaced the upstream-oriented `README.md` with a project README for the PC 微信值班助手.
+- Documented `.env` setup, dry-run default, smoke test, dashboard launch, safety boundaries, and upstream `pywechat/pyweixin` source commit.
+- Kept clear wording that this project targets domestic PC 微信 / `Weixin.exe`.
+
+### Current working state
+- README now describes this bot rather than the upstream automation library.
+- Upstream details remain available in `Weixin4.0.md`, source directories, and `LICENSE`.
+
+### Verification run and result
+- `python -m unittest discover -s tests -v` passes: 28 tests, 0 failures.
+
+### Known issues or blockers
+- Remote push still has not succeeded.
+- PowerShell `Get-Content` may display Chinese README text as mojibake depending on console encoding; file content is UTF-8.
+
+### Next exact step
+- Commit README and handoff updates, retry push, then coordinate a controlled test-contact live run.
+
+### User decisions since previous handoff
+- Keep documentation and implementation language aligned to 国内 PC 微信 / `Weixin.exe`.
