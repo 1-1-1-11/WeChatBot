@@ -159,3 +159,32 @@
 
 ### User decisions since previous handoff
 - Keep documentation and implementation language aligned to 国内 PC 微信 / `Weixin.exe`.
+
+## 2026-06-02 16:14 - Section 6: Non-sending live-check command
+
+### Completed work and changed files
+- Added `run_live_check()` and `--live-check` CLI support in `wechat_bot/app.py`.
+- Added tests proving live-check reads messages without calling `send_text`.
+- Added tests and implementation so live-check reports `WeixinAdapterError` cleanly instead of printing a traceback.
+- Updated `README.md` with the `--live-check` command and UI Automation setup note.
+
+### Current working state
+- `--live-check` is a non-sending validation command for PC 微信 message reading.
+- The command now exits `2` with a clear diagnostic if PC 微信 UI Automation is not available.
+
+### Verification run and result
+- RED: `python -m unittest tests.test_app -v` failed before implementation because `run_live_check` was missing.
+- RED: after adding failure-mode coverage, `python -m unittest tests.test_app -v` failed because `WeixinAdapterError` propagated as a traceback.
+- GREEN: `python -m unittest discover -s tests -v` passes: 30 tests, 0 failures.
+- `python -m wechat_bot.app --env .env.example --smoke-test` exits 0.
+- `python -m wechat_bot.app --env .env.example --live-check` does not send messages and currently exits 2 with: `微信 UI Automation 不可用。请确认 PC 微信/Weixin.exe 已登录，必要时按上游 Weixin4.0.md 做 UI 可见性设置。`
+
+### Known issues or blockers
+- Live PC 微信 reading is blocked by upstream `pyweixin` UI Automation visibility: `Navigator.open_weixin()` cannot locate the 微信 main window and indicates the Windows accessibility/Narrator setup is required before login.
+- No live test contact message has been successfully read yet.
+
+### Next exact step
+- User should prepare PC 微信 UI Automation visibility per `Weixin4.0.md`, then rerun `python -m wechat_bot.app --env .env.example --live-check` with a new test-contact message.
+
+### User decisions since previous handoff
+- Continue using PC 微信 / `Weixin.exe`; no screenshots; live validation should be non-sending first.

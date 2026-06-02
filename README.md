@@ -69,6 +69,14 @@ Smoke test：
 & $py -m wechat_bot.app --env .env.example --smoke-test
 ```
 
+只读现场检查 PC 微信新消息，不发送任何内容：
+
+```powershell
+& $py -m wechat_bot.app --env .env.example --live-check
+```
+
+如果输出 `微信 UI Automation 不可用`，需要先按 `Weixin4.0.md` 的 4.1+ 微信说明处理 UI 可见性。当前常见要求是：在微信登录前开启 Windows 无障碍服务/讲述人，让微信 UI Automation 元素可见；处理后再重新运行 `--live-check`。
+
 启动控制台：
 
 ```powershell
