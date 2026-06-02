@@ -86,11 +86,14 @@
 ### Verification run and result
 - `python -m unittest discover -s tests -v` passes: 25 tests, 0 failures.
 - `python -m wechat_bot.app --env .env.example --smoke-test` exits 0 with `smoke ok: 微信值班助手运行时可构建`.
+- `git commit -m "feat: add runtime dashboard and summary"` succeeded and created local commit `9248e20`.
+- `git push -u origin main` hung until the tool timeout and was stopped; remote upload still has not succeeded.
 
 ### Known issues or blockers
 - Remote push remains blocked by GitHub 443 connectivity timeout.
 - Live 微信 message reading still needs a controlled test-contact implementation pass using `pyweixin` UI Automation.
 - Model API has not been called live; `.env.example` contains placeholders.
+- Local commits exist but are not on GitHub yet because push cannot connect.
 
 ### Next exact step
 - Commit Section 3, retry push, then implement and live-verify the `pyweixin` message-reading adapter against a test contact.
