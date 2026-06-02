@@ -97,6 +97,56 @@ class BotDatabase:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def record_pending_item(self, *, contact: str, text: str, reason: str, created_at: dt.datetime) -> int:
+        with closing(self._connect()) as conn:
+            cursor = conn.execute(
+                "INSERT INTO pending_items(contact, text, reason, created_at) VALUES (?, ?, ?, ?)",
+                (contact, text, reason, created_at.isoformat()),
+            )
+            conn.commit()
+            return int(cursor.lastrowid)
+
+    def pending_items_for_day(self, day: dt.date) -> list[dict]:
+        start = dt.datetime.combine(day, dt.time.min).isoformat()
+        end = dt.datetime.combine(day, dt.time.max).isoformat()
+        with closing(self._connect()) as conn:
+            rows = conn.execute(
+                """
+                SELECT contact, text, reason, created_at
+                FROM pending_items
+                WHERE created_at BETWEEN ? AND ?
+                ORDER BY created_at ASC, id ASC
+                """,
+                (start, end),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def record_daily_summary(self, *, summary_date: dt.date, content: str, created_at: dt.datetime) -> None:
+        with closing(self._connect()) as conn:
+            conn.execute(
+                """
+                INSERT INTO daily_summaries(summary_date, content, created_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(summary_date) DO UPDATE SET
+                    content = excluded.content,
+                    created_at = excluded.created_at
+                """,
+                (summary_date.isoformat(), content, created_at.isoformat()),
+            )
+            conn.commit()
+
+    def daily_summary_for_date(self, day: dt.date) -> dict | None:
+        with closing(self._connect()) as conn:
+            row = conn.execute(
+                """
+                SELECT summary_date, content, created_at
+                FROM daily_summaries
+                WHERE summary_date = ?
+                """,
+                (day.isoformat(),),
+            ).fetchone()
+        return dict(row) if row else None
+
     def purge_older_than(self, *, now: dt.datetime, days: int) -> int:
         cutoff = (now - dt.timedelta(days=days)).isoformat()
         total = 0

@@ -56,6 +56,26 @@ class BotDatabaseTests(unittest.TestCase):
             self.assertEqual(logs[0]["contact"], "张三")
             self.assertEqual(logs[0]["text"], "收到，我稍后看完回复你。")
 
+    def test_records_daily_summary_once_per_date(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = BotDatabase(Path(tmp) / "bot.sqlite3")
+            db.initialize()
+
+            db.record_daily_summary(
+                summary_date=dt.date(2026, 6, 2),
+                content="重点：有新消息\n待办：回复张三\n风险：无",
+                created_at=dt.datetime(2026, 6, 2, 22, 0, 0),
+            )
+            db.record_daily_summary(
+                summary_date=dt.date(2026, 6, 2),
+                content="重点：已更新",
+                created_at=dt.datetime(2026, 6, 2, 22, 5, 0),
+            )
+
+            summary = db.daily_summary_for_date(dt.date(2026, 6, 2))
+
+            self.assertEqual(summary["content"], "重点：已更新")
+
 
 if __name__ == "__main__":
     unittest.main()
