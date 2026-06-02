@@ -147,13 +147,15 @@
 
 ### Verification run and result
 - `python -m unittest discover -s tests -v` passes: 28 tests, 0 failures.
+- `git commit -m "docs: add weixin bot readme"` succeeded and created local commit `0d934fe`.
+- `git push -u origin main` succeeded; `main` now tracks `origin/main`.
 
 ### Known issues or blockers
-- Remote push still has not succeeded.
+- Remote push is now working.
 - PowerShell `Get-Content` may display Chinese README text as mojibake depending on console encoding; file content is UTF-8.
 
 ### Next exact step
-- Commit README and handoff updates, retry push, then coordinate a controlled test-contact live run.
+- Commit and push this handoff update, then coordinate a controlled test-contact live run.
 
 ### User decisions since previous handoff
 - Keep documentation and implementation language aligned to 国内 PC 微信 / `Weixin.exe`.
