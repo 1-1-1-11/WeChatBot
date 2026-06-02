@@ -8,6 +8,7 @@ from wechat_bot.policy import ReplyPolicy
 from wechat_bot.presence import PresenceMode, PresenceState
 from wechat_bot.runtime import BotRuntime
 from wechat_bot.wechat_adapter import DryRunWechatAdapter, IncomingMessage
+from wechat_bot.wechat_adapter import WeixinAdapterError
 
 
 class StaticPresence:
@@ -27,6 +28,11 @@ class FixedRandom:
 
     def choice(self, values):
         return values[0]
+
+
+class FailingAdapter:
+    def read_new_personal_messages(self):
+        raise WeixinAdapterError("微信 UI Automation 不可用")
 
 
 class RuntimeTests(unittest.TestCase):
@@ -108,6 +114,15 @@ class RuntimeTests(unittest.TestCase):
 
             self.assertEqual(adapter.sent_messages, [])
             self.assertEqual(db.auto_replies_for_day(self.now.date()), [])
+
+    def test_adapter_failure_is_recorded_without_crashing_runtime(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            db = self._db(tmp)
+            runtime = self._runtime(db, FailingAdapter(), offline=True)
+
+            runtime.process_once()
+
+            self.assertIn("UI Automation", runtime.last_error)
 
     def _db(self, tmp):
         db = BotDatabase(Path(tmp) / "bot.sqlite3")

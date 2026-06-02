@@ -6,7 +6,7 @@ from typing import Callable
 
 from wechat_bot.db import BotDatabase
 from wechat_bot.policy import MessageCandidate, ReplyPolicy, SendGuard
-from wechat_bot.wechat_adapter import IncomingMessage
+from wechat_bot.wechat_adapter import IncomingMessage, WeixinAdapterError
 
 
 class BotRuntime:
@@ -32,12 +32,24 @@ class BotRuntime:
         self._baseline: set[tuple[str, str, str]] = set()
         self._seen: set[tuple[str, str, str]] = set()
         self._last_auto_reply_by_contact: dict[str, dt.datetime] = {}
+        self.last_error: str | None = None
 
     def establish_baseline(self) -> None:
-        self._baseline = {message.fingerprint for message in self.adapter.read_new_personal_messages()}
+        try:
+            self._baseline = {message.fingerprint for message in self.adapter.read_new_personal_messages()}
+            self.last_error = None
+        except WeixinAdapterError as exc:
+            self.last_error = str(exc)
+            self._baseline = set()
 
     def process_once(self) -> None:
-        for message in self.adapter.read_new_personal_messages():
+        try:
+            messages = self.adapter.read_new_personal_messages()
+            self.last_error = None
+        except WeixinAdapterError as exc:
+            self.last_error = str(exc)
+            return
+        for message in messages:
             fingerprint = message.fingerprint
             if fingerprint in self._baseline or fingerprint in self._seen:
                 continue

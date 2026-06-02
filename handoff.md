@@ -101,3 +101,32 @@
 ### User decisions since previous handoff
 - No screenshots at all.
 - Keep terminology and behavior focused on domestic PC 微信 / `Weixin.exe`.
+
+## 2026-06-02 15:52 - Section 4: PyWeixin adapter and failure guard
+
+### Completed work and changed files
+- Implemented `PyWeixinAdapter.read_new_personal_messages()` using `pyweixin.Messages.check_new_messages(close_weixin=False)`.
+- Added `normalize_pyweixin_messages()` to conservatively accept only personal text messages and ignore likely group sessions / non-text messages.
+- Added `WeixinAdapterError` so UI Automation failures are wrapped with a clear setup message instead of crashing ambiguously.
+- Updated `BotRuntime` to record adapter errors in `runtime.last_error` and return safely.
+- Installed upstream runtime dependencies into the bundled Python environment from `requirements.txt`.
+
+### Current working state
+- `pyweixin` imports successfully with the bundled Python runtime.
+- Dry-run mode remains the default through `.env.example`.
+- Real 微信 reading is implemented but still needs a controlled test-contact live run.
+
+### Verification run and result
+- `python -c "import pyweixin; from pyweixin import Messages, Navigator; print('pyweixin import ok')"` exits 0.
+- `python -m unittest discover -s tests -v` passes: 28 tests, 0 failures.
+- `python -m wechat_bot.app --env .env.example --smoke-test` exits 0 with `smoke ok: 微信值班助手运行时可构建`.
+
+### Known issues or blockers
+- Remote push remains blocked by GitHub connectivity.
+- Live test contact/small account is still needed to verify `pyweixin` reads actual new personal 微信 messages and sends a low-risk template.
+
+### Next exact step
+- Commit Section 4, retry push, then run a controlled live test after a test contact sends a message.
+
+### User decisions since previous handoff
+- Use domestic PC 微信 / Weixin behavior; `pywechat` remains only the upstream project name.
