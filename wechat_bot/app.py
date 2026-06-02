@@ -7,6 +7,7 @@ from typing import TextIO
 
 from wechat_bot.config import AppConfig
 from wechat_bot.dashboard import DashboardApp
+from wechat_bot.modern_dashboard import ModernDashboard
 from wechat_bot.db import BotDatabase
 from wechat_bot.model_client import ModelConfig, OpenAICompatibleClient
 from wechat_bot.policy import ReplyPolicy
@@ -59,6 +60,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--env", default=".env", help="Path to .env config")
     parser.add_argument("--smoke-test", action="store_true", help="Build runtime and exit")
     parser.add_argument("--live-check", action="store_true", help="Read current PC 微信 new personal messages and exit without sending")
+    parser.add_argument("--classic-ui", action="store_true", help="Use classic UI (default: modern)")
     args = parser.parse_args(argv)
 
     config = AppConfig.from_env_file(Path(args.env))
@@ -72,7 +74,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     summary_service = build_summary_service(config, db)
-    app = DashboardApp(runtime=runtime, db=db, presence=runtime.presence, summary_service=summary_service)
+
+    # 选择 UI 风格
+    if args.classic_ui:
+        app = DashboardApp(runtime=runtime, db=db, presence=runtime.presence, summary_service=summary_service)
+    else:
+        app = ModernDashboard(runtime=runtime, db=db, presence=runtime.presence)
+
     app.run()
     return 0
 
