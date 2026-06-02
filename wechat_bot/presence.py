@@ -26,8 +26,17 @@ def windows_idle_seconds() -> int:
     last_input = LASTINPUTINFO()
     last_input.cbSize = ctypes.sizeof(last_input)
     if not ctypes.windll.user32.GetLastInputInfo(ctypes.byref(last_input)):
+        # 失败时返回大值，触发"离线"判断（保守策略）
+        return 999999
+
+    tick_count = ctypes.windll.kernel32.GetTickCount()
+
+    # 处理 GetTickCount 回绕（49.7 天后归零）
+    if tick_count < last_input.dwTime:
+        # 发生回绕，返回 0（假设用户刚活动）
         return 0
-    elapsed_ms = ctypes.windll.kernel32.GetTickCount() - last_input.dwTime
+
+    elapsed_ms = tick_count - last_input.dwTime
     return max(0, int(elapsed_ms / 1000))
 
 

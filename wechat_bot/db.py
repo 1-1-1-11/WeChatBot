@@ -5,6 +5,13 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
+# SQL 安全配置：白名单允许的表名和列名
+ALLOWED_PURGE_TARGETS = {
+    "messages": "received_at",
+    "auto_replies": "sent_at",
+    "pending_items": "created_at",
+}
+
 
 class BotDatabase:
     def __init__(self, path: Path | str) -> None:
@@ -151,11 +158,8 @@ class BotDatabase:
         cutoff = (now - dt.timedelta(days=days)).isoformat()
         total = 0
         with closing(self._connect()) as conn:
-            for table, column in (
-                ("messages", "received_at"),
-                ("auto_replies", "sent_at"),
-                ("pending_items", "created_at"),
-            ):
+            # 使用白名单确保表名和列名安全
+            for table, column in ALLOWED_PURGE_TARGETS.items():
                 cursor = conn.execute(f"DELETE FROM {table} WHERE {column} < ?", (cutoff,))
                 total += cursor.rowcount
             conn.commit()

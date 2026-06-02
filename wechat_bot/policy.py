@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as dt
 import random
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol, Sequence
@@ -50,6 +51,7 @@ DEFAULT_TEMPLATES = (
 )
 
 MEDIUM_RISK_KEYWORDS = (
+    # 金融相关
     "多少钱",
     "报价",
     "价格",
@@ -57,16 +59,49 @@ MEDIUM_RISK_KEYWORDS = (
     "转账",
     "发票",
     "合同",
+    "微信支付",
+    "支付宝",
+    "银行卡",
+    "红包",
+    "借钱",
+    "贷款",
+    "欠款",
+    "汇款",
+    # 承诺保证
     "承诺",
     "保证",
+    "确认",
+    "批准",
+    # 投诉风险
     "投诉",
     "不满意",
     "退款",
+    "赔偿",
+    "法律",
+    "起诉",
+    "维权",
+    # 敏感信息
     "密码",
     "验证码",
     "账号",
     "身份证",
     "隐私",
+    "手机号",
+    "地址",
+    # 敏感操作
+    "删除",
+    "修改",
+    "授权",
+    "权限",
+    "登录",
+    "注销",
+    "取消",
+    # 紧急情况
+    "紧急",
+    "立即",
+    "马上",
+    "加急",
+    "投诉升级",
 )
 
 
@@ -116,9 +151,12 @@ class ReplyPolicy:
         )
 
     def classify_risk(self, text: str) -> RiskLevel:
-        normalized = text.strip().lower()
-        if any(keyword.lower() in normalized for keyword in MEDIUM_RISK_KEYWORDS):
-            return RiskLevel.MEDIUM
+        # 移除所有非字母数字字符，防止"多 少 钱"、"多-少-钱"等绕过
+        normalized = re.sub(r'[^\w]', '', text.strip().lower())
+        for keyword in MEDIUM_RISK_KEYWORDS:
+            keyword_normalized = re.sub(r'[^\w]', '', keyword.lower())
+            if keyword_normalized in normalized:
+                return RiskLevel.MEDIUM
         return RiskLevel.LOW
 
 

@@ -20,20 +20,41 @@ class DashboardApp:
         self.presence = presence
         self.summary_service = summary_service
         self.poll_seconds = poll_seconds
-        self.paused = tk.BooleanVar(value=False)
+
+        # 使用线程安全的布尔值替代 Tkinter 变量（跨线程访问）
+        self._paused = False
+        self._paused_lock = threading.Lock()
+
         self.root = tk.Tk()
         self.root.title("微信值班助手")
         self.root.geometry("860x620")
+
+        # UI 用的 Tkinter 变量（仅主线程访问）
+        self.paused_var = tk.BooleanVar(value=False)
         self.status_var = tk.StringVar(value="微信值班状态：初始化")
         self.mode_var = tk.StringVar(value=PresenceMode.AUTO.value)
         self._stop_event = threading.Event()
         self._build()
 
+    def _get_paused(self) -> bool:
+        """线程安全的获取暂停状态（工作线程调用）"""
+        with self._paused_lock:
+            return self._paused
+
+    def _set_paused(self, value: bool) -> None:
+        """线程安全的设置暂停状态"""
+        with self._paused_lock:
+            self._paused = value
+
+    def _on_paused_toggle(self) -> None:
+        """Checkbutton 回调（主线程）"""
+        self._set_paused(self.paused_var.get())
+
     def run(self) -> None:
-        self.runtime.paused_provider = lambda: self.paused.get()
+        self.runtime.paused_provider = self._get_paused
         self.runtime.establish_baseline()
-        worker = threading.Thread(target=self._worker_loop, daemon=True)
-        worker.start()
+        self.worker = threading.Thread(target=self._worker_loop, daemon=True)
+        self.worker.start()
         self._refresh_ui()
         self.root.protocol("WM_DELETE_WINDOW", self._close)
         self.root.mainloop()
@@ -46,7 +67,12 @@ class DashboardApp:
 
         controls = ttk.Frame(outer)
         controls.pack(fill=tk.X, pady=8)
-        ttk.Checkbutton(controls, text="暂停自动回复", variable=self.paused).pack(side=tk.LEFT)
+
+        # 绑定回调而非直接传递变量（线程安全）
+        ttk.Checkbutton(
+            controls, text="暂停自动回复", variable=self.paused_var, command=self._on_paused_toggle
+        ).pack(side=tk.LEFT)
+
         for label, value in (
             ("自动检测", PresenceMode.AUTO.value),
             ("强制在线", PresenceMode.FORCED_ONLINE.value),
@@ -117,4 +143,5 @@ class DashboardApp:
 
     def _close(self) -> None:
         self._stop_event.set()
+        self.worker.join(timeout=self.poll_seconds + 2)
         self.root.destroy()

@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 import os
+import ssl
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from datetime import date
+
+# 网络请求安全配置
+MAX_RESPONSE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
 def build_daily_summary_messages(messages: list[dict], *, summary_date: date) -> list[dict]:
@@ -63,6 +67,10 @@ class OpenAICompatibleClient:
             "temperature": temperature,
         }
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+
+        # 显式创建 SSL 上下文，确保证书验证
+        ssl_context = ssl.create_default_context()
+
         request = urllib.request.Request(
             f"{self.config.base_url}/v1/chat/completions",
             data=body,
@@ -73,9 +81,21 @@ class OpenAICompatibleClient:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(request, timeout=60) as response:
-                data = json.loads(response.read().decode("utf-8"))
+            with urllib.request.urlopen(request, timeout=60, context=ssl_context) as response:
+                # 限制响应大小，防止 OOM
+                content = response.read(MAX_RESPONSE_SIZE + 1)
+                if len(content) > MAX_RESPONSE_SIZE:
+                    raise RuntimeError("API response too large")
+                data = json.loads(content.decode("utf-8"))
         except urllib.error.URLError as exc:
-            raise RuntimeError(f"model API request failed: {exc}") from exc
+            # 不在异常消息中包含 URL（可能含 API key）
+            raise RuntimeError("model API request failed") from exc
+
+        # 验证响应结构，防止 KeyError
+        if "choices" not in data or not data["choices"]:
+            raise RuntimeError("invalid API response: missing choices")
+        if "message" not in data["choices"][0] or "content" not in data["choices"][0]["message"]:
+            raise RuntimeError("invalid API response: missing message content")
+
         return data["choices"][0]["message"]["content"]
 
