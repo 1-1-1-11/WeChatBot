@@ -178,10 +178,13 @@
 - GREEN: `python -m unittest discover -s tests -v` passes: 30 tests, 0 failures.
 - `python -m wechat_bot.app --env .env.example --smoke-test` exits 0.
 - `python -m wechat_bot.app --env .env.example --live-check` does not send messages and currently exits 2 with: `微信 UI Automation 不可用。请确认 PC 微信/Weixin.exe 已登录，必要时按上游 Weixin4.0.md 做 UI 可见性设置。`
+- `git commit -m "feat: add non-sending weixin live check"` succeeded and created local commit `91c1f87`.
+- `git push` failed with GitHub 443 connectivity timeout.
 
 ### Known issues or blockers
 - Live PC 微信 reading is blocked by upstream `pyweixin` UI Automation visibility: `Navigator.open_weixin()` cannot locate the 微信 main window and indicates the Windows accessibility/Narrator setup is required before login.
 - No live test contact message has been successfully read yet.
+- Latest commit is local only until the next successful `git push`.
 
 ### Next exact step
 - User should prepare PC 微信 UI Automation visibility per `Weixin4.0.md`, then rerun `python -m wechat_bot.app --env .env.example --live-check` with a new test-contact message.
