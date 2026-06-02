@@ -1,143 +1,164 @@
 @echo off
-chcp 65001 >nul
-setlocal enabledelayedexpansion
+REM 设置代码页为 UTF-8
+chcp 65001 >nul 2>&1
 
 echo ========================================
-echo   微信值班助手 - 一键启动脚本
+echo   WeChatBot - Complete Startup
 echo ========================================
 echo.
 
 REM 检查 Python 是否安装
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [错误] 未找到 Python，请先安装 Python 3.9+
-    echo 下载地址: https://www.python.org/downloads/
+    echo [Error] Python not found. Please install Python 3.9+
+    echo Download: https://www.python.org/downloads/
+    echo.
     pause
     exit /b 1
 )
 
-echo [1/5] 检查依赖包...
+echo [1/5] Checking dependencies...
 python -c "import pyweixin" >nul 2>&1
 if errorlevel 1 (
-    echo [安装] 正在安装依赖包...
+    echo [Install] Installing dependencies...
     python -m pip install -r requirements.txt
     if errorlevel 1 (
-        echo [错误] 依赖包安装失败
+        echo [Error] Failed to install dependencies
+        echo.
         pause
         exit /b 1
     )
-    echo [完成] 依赖包安装成功
+    echo [Done] Dependencies installed
 ) else (
-    echo [跳过] 依赖包已安装
+    echo [Skip] Dependencies already installed
 )
 echo.
 
-echo [2/5] 检查配置文件...
+echo [2/5] Checking configuration file...
 if not exist ".env" (
-    echo [创建] 正在从模板创建 .env 配置文件...
-    copy .env.example .env >nul
-    echo [警告] 请编辑 .env 文件，填入你的 API 配置！
+    echo [Create] Creating .env from template...
+    if exist ".env.example" (
+        copy .env.example .env >nul 2>&1
+    ) else (
+        echo [Error] .env.example not found
+        pause
+        exit /b 1
+    )
+    echo [Warning] Please edit .env file to configure your API settings!
     echo.
-    echo 需要配置的关键项：
-    echo   - OPENAI_BASE_URL   （API 地址）
-    echo   - OPENAI_API_KEY    （API 密钥）
-    echo   - MODEL_NAME        （模型名称）
+    echo Key configuration items:
+    echo   - OPENAI_BASE_URL   (API endpoint)
+    echo   - OPENAI_API_KEY    (API key)
+    echo   - MODEL_NAME        (Model name)
     echo.
-    echo 按任意键打开配置文件编辑...
+    echo Press any key to open config file for editing...
     pause >nul
     notepad .env
     echo.
-    echo 配置完成后，按任意键继续...
+    echo After configuration, press any key to continue...
     pause >nul
 ) else (
-    echo [跳过] 配置文件已存在
+    echo [Skip] Configuration file exists
 )
 echo.
 
-echo [3/5] 检查微信 UI Automation...
+echo [3/5] Checking WeChat UI Automation...
 python -m wechat_bot.app --env .env --live-check >nul 2>&1
 if errorlevel 1 (
-    echo [警告] 微信 UI Automation 可能不可用
+    echo [Warning] WeChat UI Automation may not be available
     echo.
-    echo 请执行以下步骤：
-    echo   1. 按 Win+Ctrl+Enter 启动"讲述人"
-    echo   2. 登录微信（如果未登录）
-    echo   3. 等待 5 分钟
-    echo   4. 按 Win+Ctrl+Enter 关闭"讲述人"
-    echo   5. 重新运行此脚本
+    echo Please follow these steps:
+    echo   1. Press Win+Ctrl+Enter to start Narrator
+    echo   2. Login to WeChat (if not logged in)
+    echo   3. Wait 5 minutes
+    echo   4. Press Win+Ctrl+Enter to close Narrator
+    echo   5. Run this script again
     echo.
-    echo 详细说明请查看 GETTING_STARTED.md
+    echo See GETTING_STARTED.md for details
     echo.
-    choice /C YN /M "是否继续启动（不推荐）"
+    choice /C YN /M "Continue anyway (not recommended)"
     if errorlevel 2 exit /b 0
 ) else (
-    echo [完成] 微信 UI Automation 可用
+    echo [Done] WeChat UI Automation available
 )
 echo.
 
-echo [4/5] 运行快速测试...
+echo [4/5] Running quick test...
 python -m wechat_bot.app --env .env --smoke-test
 if errorlevel 1 (
-    echo [错误] Smoke test 失败，请检查配置
+    echo [Error] Smoke test failed, please check configuration
+    echo.
     pause
     exit /b 1
 )
 echo.
 
-echo [5/5] 确认运行模式...
+echo [5/5] Confirming running mode...
 echo.
-echo 当前配置：
+echo Current configuration:
 findstr /C:"DRY_RUN" .env
 echo.
 echo ==========================================
-echo   重要提示：
+echo   Important Notice:
 echo ==========================================
 echo.
-echo   DRY_RUN=true  ：测试模式，不真实发送消息
-echo   DRY_RUN=false ：生产模式，会真实发送消息！
+echo   DRY_RUN=true  : Test mode, no real sending
+echo   DRY_RUN=false : Production mode, WILL send real messages!
 echo.
 echo ==========================================
 
-findstr /C:"DRY_RUN=false" .env >nul
+findstr /C:"DRY_RUN=false" .env >nul 2>&1
 if not errorlevel 1 (
     echo.
-    echo [警告] 你即将启动【生产模式】，将真实发送微信消息！
+    echo [Warning] You are about to start in PRODUCTION MODE!
+    echo Real WeChat messages will be sent!
     echo.
-    choice /C YN /M "确认启动生产模式"
+    choice /C YN /M "Confirm starting production mode"
     if errorlevel 2 (
-        echo [取消] 已取消启动
+        echo [Cancelled] Startup cancelled
         echo.
-        echo 如需测试，请编辑 .env 文件，设置 DRY_RUN=true
+        echo For testing, edit .env and set DRY_RUN=true
+        echo.
         pause
         exit /b 0
     )
 ) else (
     echo.
-    echo [安全] 当前为测试模式，不会真实发送消息
+    echo [Safe] Current test mode, will not send real messages
     echo.
-    echo 如需真实发送，请编辑 .env 文件，设置 DRY_RUN=false
+    echo To enable real sending, edit .env and set DRY_RUN=false
     echo.
     pause
 )
 
 echo.
 echo ========================================
-echo   正在启动微信值班助手...
+echo   Starting WeChatBot...
 echo ========================================
 echo.
-echo 控制台说明：
-echo   - 状态栏显示：在线状态、模式、空闲时间
-echo   - 暂停自动回复：勾选后停止自动回复
-echo   - 模式选择：自动检测/强制在线/强制离线
-echo   - 标签页：每日总览/待办风险/自动回复
+echo Console instructions:
+echo   - Status bar shows: online status, mode, idle time
+echo   - Pause auto reply: Check to stop auto-reply
+echo   - Mode selection: Auto detect / Force online / Force offline
+echo   - Tabs: Daily summary / Pending risks / Auto replies
 echo.
-echo 关闭控制台：点击窗口的 X 按钮或按 Ctrl+C
+echo To close: Click X button or press Ctrl+C
 echo.
 echo ========================================
 echo.
 
 python -m wechat_bot --env .env
 
+if errorlevel 1 (
+    echo.
+    echo [Error] Failed to start. Please check:
+    echo   1. Python environment is correct
+    echo   2. Dependencies are installed
+    echo   3. WeChat is logged in
+    echo   4. .env configuration is valid
+    echo.
+)
+
 echo.
-echo 控制台已关闭。
+echo Console closed.
 pause

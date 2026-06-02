@@ -1,58 +1,77 @@
 @echo off
-chcp 65001 >nul
+REM 设置代码页为 UTF-8
+chcp 65001 >nul 2>&1
 
 echo ========================================
-echo   微信值班助手 - 生产模式启动
+echo   WeChatBot - Production Mode
 echo ========================================
 echo.
 
 REM 检查配置文件
 if not exist ".env" (
-    echo [错误] 未找到配置文件 .env
+    echo [Error] Configuration file .env not found
     echo.
-    echo 请先运行 "start.bat" 完成初始配置
+    echo Please run start.bat or quick-start.bat first
+    echo to complete initial setup.
+    echo.
     pause
     exit /b 1
 )
 
 REM 自动设置为生产模式
-echo [配置] 正在设置为生产模式...
+echo [Config] Setting to production mode...
+echo.
 
-REM 读取配置文件并修改 DRY_RUN
-powershell -Command "(Get-Content .env) -replace 'DRY_RUN=true', 'DRY_RUN=false' | Set-Content .env"
+REM 创建临时 PowerShell 脚本
+echo (Get-Content .env) -replace 'DRY_RUN=true', 'DRY_RUN=false' ^| Set-Content .env.tmp > update.ps1
+echo Move-Item -Force .env.tmp .env >> update.ps1
 
-echo [完成] 已设置为生产模式
+REM 执行更新
+powershell -ExecutionPolicy Bypass -File update.ps1 2>nul
+del update.ps1 2>nul
+
+echo [Done] Production mode enabled
 echo.
 
 echo ==========================================
-echo   警告：生产模式已启用！
+echo   WARNING: Production Mode Active!
 echo ==========================================
 echo.
-echo   将会真实发送微信消息！
-echo   确保你已经：
-echo     - 用测试联系人充分验证过功能
-echo     - 理解自动回复的触发条件
-echo     - 知道如何暂停自动回复
+echo   Real WeChat messages WILL be sent!
+echo   Make sure you have:
+echo     - Tested thoroughly with test contacts
+echo     - Understood the auto-reply conditions
+echo     - Know how to pause auto-reply
 echo.
 echo ==========================================
 echo.
 
-choice /C YN /M "确认启动生产模式"
+choice /C YN /M "Confirm starting in production mode"
 if errorlevel 2 (
     echo.
-    echo [取消] 已取消启动
+    echo [Cancelled] Startup cancelled
     echo.
-    echo 如需测试模式，请运行 "快速启动.bat"
+    echo For test mode, run quick-start.bat instead
+    echo.
     pause
     exit /b 0
 )
 
 echo.
-echo 正在启动微信值班助手（生产模式）...
+echo Starting WeChatBot (Production Mode)...
 echo.
 
 python -m wechat_bot --env .env
 
+if errorlevel 1 (
+    echo.
+    echo [Error] Failed to start. Please check:
+    echo   1. Python is installed
+    echo   2. Dependencies are installed
+    echo   3. WeChat is logged in
+    echo.
+)
+
 echo.
-echo 控制台已关闭。
+echo Console closed.
 pause

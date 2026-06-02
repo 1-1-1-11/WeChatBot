@@ -1,44 +1,61 @@
 @echo off
-chcp 65001 >nul
+REM 设置代码页为 UTF-8
+chcp 65001 >nul 2>&1
 
 echo ========================================
-echo   微信值班助手 - 快速启动
+echo   WeChatBot - Quick Start
 echo ========================================
 echo.
 
 REM 检查配置文件
 if not exist ".env" (
-    echo [首次运行] 正在创建配置文件...
-    copy .env.example .env >nul
+    echo [First Run] Creating configuration file...
+    if exist ".env.example" (
+        copy .env.example .env >nul 2>&1
+    ) else (
+        echo [Error] .env.example not found
+        echo.
+        pause
+        exit /b 1
+    )
     echo.
-    echo 请编辑 .env 文件，配置你的 API 信息：
+    echo Please edit .env file to configure your API settings:
     echo.
     notepad .env
     echo.
-    echo 配置说明：
-    echo   - OPENAI_BASE_URL: 你的 API 地址
-    echo   - OPENAI_API_KEY: 你的 API 密钥
-    echo   - MODEL_NAME: 模型名称
-    echo   - DRY_RUN: true=测试模式，false=生产模式
+    echo Configuration guide:
+    echo   - OPENAI_BASE_URL: Your API endpoint
+    echo   - OPENAI_API_KEY: Your API key
+    echo   - MODEL_NAME: Model name
+    echo   - DRY_RUN: true=test mode, false=production mode
     echo.
     pause
 )
 
-REM 检查是否为生产模式
-findstr /C:"DRY_RUN=false" .env >nul
+REM 检查运行模式
+findstr /C:"DRY_RUN=false" .env >nul 2>&1
 if not errorlevel 1 (
-    echo [生产模式] 将真实发送微信消息！
+    echo [Production Mode] Will send real WeChat messages!
     echo.
 ) else (
-    echo [测试模式] 不会真实发送消息
+    echo [Test Mode] Will NOT send real messages
     echo.
-    echo 如需真实发送，编辑 .env 设置: DRY_RUN=false
+    echo To enable real sending, edit .env and set: DRY_RUN=false
     echo.
 )
 
-echo 正在启动...
+echo Starting WeChatBot...
 echo.
 
 python -m wechat_bot --env .env
+
+if errorlevel 1 (
+    echo.
+    echo [Error] Failed to start. Please check:
+    echo   1. Python is installed
+    echo   2. Dependencies are installed: pip install -r requirements.txt
+    echo   3. .env file is configured correctly
+    echo.
+)
 
 pause
